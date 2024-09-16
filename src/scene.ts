@@ -28,6 +28,11 @@ export class Scene {
     }
 
     update() {
-        
+        this.camera.update();
+
+        this.nodes.forEach(node => {
+            if (![0, 2].includes(node.index))
+                this.nodePositions[node.index][1] -= 0.01;
+        });
     }
 }

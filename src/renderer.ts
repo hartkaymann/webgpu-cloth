@@ -3,11 +3,6 @@ import { Scene } from "./scene";
 import { mat4, vec3 } from "gl-matrix";
 
 
-const positions = new Float32Array([1, 1, -1, 1, 1, 1, 1, -1, 1, 1, -1, -1, -1, 1, 1, -1, 1, -1, -1, -1, -1, -1, -1, 1, -1, 1, 1, 1, 1, 1, 1, 1, -1, -1, 1, -1, -1, -1, -1, 1, -1, -1, 1, -1, 1, -1, -1, 1, 1, 1, 1, -1, 1, 1, -1, -1, 1, 1, -1, 1, -1, 1, -1, 1, 1, -1, 1, -1, -1, -1, -1, -1]);
-const normals = new Float32Array([1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, -1, 0, 0, -1, 0, 0, -1, 0, 0, -1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, -1, 0, 0, -1, 0, 0, -1, 0, 0, -1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, -1, 0, 0, -1, 0, 0, -1, 0, 0, -1]);
-const texcoords = new Float32Array([1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]);
-const indices = new Uint16Array([0, 1, 2, 0, 2, 3, 4, 5, 6, 4, 6, 7, 8, 9, 10, 8, 10, 11, 12, 13, 14, 12, 14, 15, 16, 17, 18, 16, 18, 19, 20, 21, 22, 20, 22, 23]);
-
 export class Renderer {
 
     canvas: HTMLCanvasElement
@@ -33,17 +28,11 @@ export class Renderer {
     // Matrices
     worldViewProjection: mat4;
     worldInverseTranspose: mat4;
-    lightDirection: vec3;
 
     // Buffers
     vsUniformBuffer: GPUBuffer;
-    fsUniformBuffer: GPUBuffer;
     vsUniformValues: Float32Array;
-    fsUniformValues: Float32Array;
     positionBuffer: GPUBuffer;
-    normalBuffer: GPUBuffer;
-    texcoordBuffer: GPUBuffer;
-    indicesBuffer: GPUBuffer;
 
     // Scene to render
     scene: Scene
@@ -70,46 +59,15 @@ export class Renderer {
             alphaMode: "opaque"
         });
 
-        this.positionBuffer = await this.createBuffer(this.device, positions, GPUBufferUsage.VERTEX);
-        this.normalBuffer = await this.createBuffer(this.device, normals, GPUBufferUsage.VERTEX);
-        this.texcoordBuffer = await this.createBuffer(this.device, texcoords, GPUBufferUsage.VERTEX);
-        this.indicesBuffer = await this.createBuffer(this.device, indices, GPUBufferUsage.INDEX);
-
-        const tex = this.device.createTexture({
-            size: [2, 2],
-            format: 'rgba8unorm',
-            usage:
-                GPUTextureUsage.TEXTURE_BINDING | 
-                GPUTextureUsage.COPY_DST,
+        this.positionBuffer = this.device.createBuffer({
+            size: this.scene.nodes.length * 3 * 4, // n nodes w/ 3 floats @ 4 bytes
+            usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
         });
 
-        this.device.queue.writeTexture(
-            { texture: tex },
-            new Uint8Array([
-                255, 255, 255, 255,
-                255, 255, 255, 255,
-                255, 255, 255, 255,
-                255, 255, 255, 255,
-            ]),
-            { bytesPerRow: 8, rowsPerImage: 2 },
-            { width: 2, height: 2 },
-        );
-        const sampler = this.device.createSampler({
-            magFilter: 'nearest',
-            minFilter: 'nearest',
-        });
-
-
-        const vUniformBufferSize = 2 * 16 * 4;
-        const fUniformBufferSize = 3 * 4;
+        const vUniformBufferSize = 2 * 16 * 4; // 2 mats w/ 16 floats @ 4 bytes 
 
         this.vsUniformBuffer = this.device.createBuffer({
             size: Math.max(16, vUniformBufferSize),
-            usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-        });
-
-        this.fsUniformBuffer = this.device.createBuffer({
-            size: Math.max(16, fUniformBufferSize),
             usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
         });
 
@@ -122,23 +80,6 @@ export class Renderer {
                     buffer: {
                         type: "uniform"
                     }
-                },
-                {
-                    binding: 1,
-                    visibility: GPUShaderStage.FRAGMENT,
-                    buffer: {
-                        type: "uniform"
-                    }
-                },
-                {
-                    binding: 2,
-                    visibility: GPUShaderStage.FRAGMENT,
-                    sampler: {}
-                },
-                {
-                    binding: 3,
-                    visibility: GPUShaderStage.FRAGMENT,
-                    texture: {}
                 }
             ]
         });
@@ -147,9 +88,6 @@ export class Renderer {
             layout: this.bind_group_layout,
             entries: [
                 { binding: 0, resource: { buffer: this.vsUniformBuffer } },
-                { binding: 1, resource: { buffer: this.fsUniformBuffer } },
-                { binding: 2, resource: sampler },
-                { binding: 3, resource: tex.createView() }
             ]
         });       
 
@@ -171,21 +109,7 @@ export class Renderer {
                         attributes: [
                             { shaderLocation: 0, offset: 0, format: 'float32x3' }
                         ]
-                    },
-                    // normals
-                    {
-                        arrayStride: 3 * 4, // 3 floats, 4 bytes each
-                        attributes: [
-                            { shaderLocation: 1, offset: 0, format: 'float32x3' },
-                        ],
-                    },
-                    // texcoords
-                    {
-                        arrayStride: 2 * 4, // 2 float @ 4 bytes
-                        attributes: [
-                            { shaderLocation: 2, offset: 0, format: 'float32x2' }
-                        ]
-                    },
+                    }
                 ]
             },
             fragment: {
@@ -196,7 +120,7 @@ export class Renderer {
                 ]
             },
             primitive: {
-                topology: 'triangle-list',
+                topology: 'point-list',
                 cullMode: 'back'
             }
         })
@@ -205,8 +129,6 @@ export class Renderer {
         this.vsUniformValues = new Float32Array(2 * 16);
         this.worldViewProjection = this.vsUniformValues.subarray(0, 16);
         this.worldInverseTranspose = this.vsUniformValues.subarray(16, 32);
-        this.fsUniformValues = new Float32Array(3);
-        this.lightDirection = this.fsUniformValues.subarray(0, 3);
 
         this.renderPassDescriptor = {
             colorAttachments: [
@@ -226,19 +148,18 @@ export class Renderer {
     render = () => {
         let start = performance.now();
 
-        this.scene.camera.update();
+        this.scene.update();
 
         const viewProjection = mat4.create();
+        const positionBufferValues = Float32Array.from([].concat(...this.scene.nodePositions.map(vec => Array.from(vec)))); 
 
         mat4.multiply(viewProjection, this.scene.camera.projectionMatrix, this.scene.camera.viewMatrix);
         const world = mat4.create(); // Should be unit matrix?
         mat4.transpose(this.worldInverseTranspose, mat4.invert(world, world));
         mat4.multiply(this.worldViewProjection, viewProjection, world);
 
-        vec3.normalize(this.lightDirection, [1, 8, -10]);
-
+        this.device.queue.writeBuffer(this.positionBuffer, 0, positionBufferValues);
         this.device.queue.writeBuffer(this.vsUniformBuffer, 0, this.vsUniformValues);
-        this.device.queue.writeBuffer(this.fsUniformBuffer, 0, this.fsUniformValues);
 
         const colorTexture = this.context.getCurrentTexture();
         this.renderPassDescriptor.colorAttachments[0].view = colorTexture.createView();
@@ -248,10 +169,7 @@ export class Renderer {
         passEncoder.setPipeline(this.pipeline);
         passEncoder.setBindGroup(0, this.bind_group);
         passEncoder.setVertexBuffer(0, this.positionBuffer);
-        passEncoder.setVertexBuffer(1, this.normalBuffer);
-        passEncoder.setVertexBuffer(2, this.texcoordBuffer);
-        passEncoder.setIndexBuffer(this.indicesBuffer, 'uint16');
-        passEncoder.drawIndexed(indices.length);
+        passEncoder.draw(this.scene.nodePositions.length)
         passEncoder.end();
         this.device.queue.submit([commandEncoder.finish()]);
 
@@ -268,17 +186,5 @@ export class Renderer {
         });
 
         requestAnimationFrame(this.render);
-    }
-
-    async createBuffer(device, data, usage): Promise<GPUBuffer> {
-        const buffer = device.createBuffer({
-            size: data.byteLength,
-            usage,
-            mappedAtCreation: true,
-        });
-        const dst = new data.constructor(buffer.getMappedRange());
-        dst.set(data);
-        buffer.unmap();
-        return buffer;
     }
 }

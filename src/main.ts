@@ -7,7 +7,7 @@ const canvas : HTMLCanvasElement = <HTMLCanvasElement> document.getElementById("
 const camera: Camera = new Camera(
     [1, 4, 6], 
     [0, 1, 0], 
-    [0, 0, 0], 
+    [1, 0, 0], 
     45, 
     canvas.width / canvas.height, 
     0.1, 
