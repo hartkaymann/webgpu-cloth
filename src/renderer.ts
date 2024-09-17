@@ -36,12 +36,13 @@ export class Renderer {
 
     // Scene to render
     scene: Scene
+
     constructor(canvas: HTMLCanvasElement, scene: Scene) {
         this.canvas = canvas;
         this.scene = scene;
     }
 
-    async Initialize() {
+    async init() {
 
         //adapter: wrapper around (physical) GPU.
         //Describes features and limits
@@ -60,7 +61,7 @@ export class Renderer {
         });
 
         this.positionBuffer = this.device.createBuffer({
-            size: this.scene.nodes.length * 3 * 4, // n nodes w/ 3 floats @ 4 bytes
+            size: this.scene.simulation.nodes.length * 2 * 4, // n nodes w/ 3 floats @ 4 bytes
             usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
         });
 
@@ -89,7 +90,7 @@ export class Renderer {
             entries: [
                 { binding: 0, resource: { buffer: this.vsUniformBuffer } },
             ]
-        });       
+        });
 
         const pipeline_layout = this.device.createPipelineLayout({
             bindGroupLayouts: [this.bind_group_layout]
@@ -105,9 +106,9 @@ export class Renderer {
                 buffers: [
                     // position
                     {
-                        arrayStride: 3 * 4, // 3 float @ 4 bytes
+                        arrayStride: 2 * 4, // 2 float @ 4 bytes
                         attributes: [
-                            { shaderLocation: 0, offset: 0, format: 'float32x3' }
+                            { shaderLocation: 0, offset: 0, format: 'float32x2' }
                         ]
                     }
                 ]
@@ -125,7 +126,7 @@ export class Renderer {
             }
         })
 
-        
+
         this.vsUniformValues = new Float32Array(2 * 16);
         this.worldViewProjection = this.vsUniformValues.subarray(0, 16);
         this.worldInverseTranspose = this.vsUniformValues.subarray(16, 32);
@@ -135,7 +136,7 @@ export class Renderer {
                 {
                     view: undefined,
                     resolveTarget: undefined,
-                    clearValue: { r: 0.3, g: 0.3, b: 0.3, a: 1.0 },
+                    clearValue: { r: 0.12, g: 0.12, b: 0.13, a: 1.0 },
                     loadOp: 'clear',
                     storeOp: 'store'
                 }
@@ -151,7 +152,9 @@ export class Renderer {
         this.scene.update();
 
         const viewProjection = mat4.create();
-        const positionBufferValues = Float32Array.from([].concat(...this.scene.nodePositions.map(vec => Array.from(vec)))); 
+        const positionBufferValues = Float32Array.from(
+            [].concat(...this.scene.simulation.nodes.map(node => Array.from(node.position)))
+        );
 
         mat4.multiply(viewProjection, this.scene.camera.projectionMatrix, this.scene.camera.viewMatrix);
         const world = mat4.create(); // Should be unit matrix?
@@ -169,14 +172,14 @@ export class Renderer {
         passEncoder.setPipeline(this.pipeline);
         passEncoder.setBindGroup(0, this.bind_group);
         passEncoder.setVertexBuffer(0, this.positionBuffer);
-        passEncoder.draw(this.scene.nodePositions.length)
+        passEncoder.draw(this.scene.simulation.nodes.length)
         passEncoder.end();
         this.device.queue.submit([commandEncoder.finish()]);
 
         this.device.queue.onSubmittedWorkDone().then(() => {
             let end = performance.now();
-            const performanceLabel: HTMLElement = <HTMLElement>document.getElementById("performance");
-            performanceLabel.innerText = ( 1000 / (end - start)).toLocaleString(
+            const fpsLabel: HTMLElement = <HTMLElement>document.getElementById("fps");
+            fpsLabel.innerText = (1000 / (end - start)).toLocaleString(
                 undefined,
                 {
                     minimumFractionDigits: 0,
