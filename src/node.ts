@@ -10,12 +10,11 @@ export class ClothNode {
     forceAccumulator: vec2;
 
     dt0: number;
-    radius: number;
     invMass: number;
     isStatic: boolean;
 
 
-    constructor(position: vec2, mass: number, radius = 1) {
+    constructor(position: vec2, mass: number) {
         this.position = position;
         this.prevPosition = position;
         this.gravity = [0, 0];
@@ -24,7 +23,6 @@ export class ClothNode {
         this.forceAccumulator = [0, 0];
 
         this.dt0 = 1;
-        this.radius = radius;
         if (mass > 0) {
             this.invMass = 1 / mass;
             this.isStatic = false;
@@ -82,12 +80,5 @@ export class ClothNode {
 
     addForce(f: vec2) {
         vec2.add(this.forceAccumulator, this.forceAccumulator, f);
-    }
-
-    isInside(position: vec2): boolean {
-        let diff = vec2.create();
-        vec2.sub(diff, this.position, position);
-
-        return vec2.len(diff) < this.radius; 
     }
 } 

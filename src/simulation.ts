@@ -15,7 +15,7 @@ export class Simulation {
         this.gravity = [0, -9.81]
     }
 
-    createNode(position: vec2 | Float32Array, mass = 1) : ClothNode {
+    createNode(position: vec2 | Float32Array, mass = 0.01) : ClothNode {
         let node = new ClothNode(position, mass);
         this.nodes.push(node);
         return node;
@@ -27,25 +27,15 @@ export class Simulation {
         return constraint;
     }
 
-    getNodeAtPosition(position) {
-        for(let i = 0; i < this.nodes.length; i++) {
-            if(this.nodes[i].isInside(position)) {
-                return this.nodes[i];
-            }
-        }
-        
-        return null;
-    }
-
     update(dt: number) {
         for( let i = 0; i < this.nodes.length; i++) {
             this.nodes[i].gravity = this.gravity;
             this.nodes[i].update(dt);
         }
 
-        for(let iteration = 0; iteration < 5; iteration++) {
+        for(let iteration = 0; iteration < 10; iteration++) {
             for(let i = 0; i < this.constraints.length; i++) {
-                this.constraints[i].update();
+                this.constraints[i].update(dt);
             }
         }
     }

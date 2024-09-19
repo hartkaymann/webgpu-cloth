@@ -91,7 +91,7 @@ export class Camera {
     }
 
     zoom(deltaZoom: number) {
-        this.radius = Math.max(0.1, Math.min(20, this.radius + deltaZoom)); 
+        this.radius = Math.max(0.5, Math.min(20, this.radius + deltaZoom)); 
         this.update();
     }
 }

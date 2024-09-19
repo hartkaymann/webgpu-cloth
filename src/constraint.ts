@@ -18,7 +18,7 @@ export class Constraint {
         this.restLength = vec2.len(temp)
     }
 
-    update() {
+    update(dt: number) {
         let direction = vec2.create();
         let offset = vec2.create();
 
@@ -28,6 +28,8 @@ export class Constraint {
         let difference = this.restLength - currLength;
 
         let correctionPercentage = (difference / currLength) / 2;
+        let timeScaledStrength = this.strength * dt;
+
         vec2.scale(offset, direction, correctionPercentage * this.strength);
         vec2.normalize(direction, direction);
 
