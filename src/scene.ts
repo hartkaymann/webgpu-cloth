@@ -1,4 +1,4 @@
-import { vec2 } from "gl-matrix";
+import { vec2, vec3 } from "gl-matrix";
 import { Camera } from "./camera";
 import { Simulation } from "./simulation";
 import { ClothNode } from "./node";
@@ -36,7 +36,7 @@ export class Scene {
             nodes2d[y] = [];
             for (let x = 0; x < this.clothResolution; x++) {
                 let offset: vec2 = [-this.clothWidth / 2, this.clothHeight / 2];
-                let position: vec2 = [x * strideX + offset[0], y * strideY + offset[1]];
+                let position: vec3 = [x * strideX + offset[0], y * strideY + offset[1], 0];
                 nodes2d[y][x] = this.simulation.createNode(position);
 
                 if (x%4 == 0 && y == 0 || x == this.clothResolution - 1 && y == 0) {

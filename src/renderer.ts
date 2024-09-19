@@ -1,6 +1,6 @@
 import shader_src from "./shaders/common.wgsl"
 import { Scene } from "./scene";
-import { mat4, vec3 } from "gl-matrix";
+import { mat4 } from "gl-matrix";
 
 
 export class Renderer {
@@ -61,7 +61,7 @@ export class Renderer {
         });
 
         this.positionBuffer = this.device.createBuffer({
-            size: this.scene.simulation.nodes.length * 2 * 4, // n nodes w/ 3 floats @ 4 bytes
+            size: this.scene.simulation.nodes.length * 3 * 4, // n nodes w/ 3 floats @ 4 bytes
             usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
         });
 
@@ -106,7 +106,7 @@ export class Renderer {
                 buffers: [
                     // position
                     {
-                        arrayStride: 2 * 4, // 2 float @ 4 bytes
+                        arrayStride: 3 * 4, // 3 float @ 4 bytes
                         attributes: [
                             { shaderLocation: 0, offset: 0, format: 'float32x2' }
                         ]

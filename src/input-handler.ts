@@ -1,12 +1,14 @@
-import { mat4, vec2, vec3 } from "gl-matrix";
+import { mat4, vec3 } from "gl-matrix";
 import { Camera } from "./camera";
 import { Scene } from "./scene";
+import { Raycaster } from "./raycaster";
 
 export class InputHandler {
 
     canvas: HTMLCanvasElement;
     camera: Camera;
     scene: Scene;
+    raycaster: Raycaster;
 
     isMiddleMouseDragging = false;
     isLeftMouseDragging = false;
@@ -17,6 +19,8 @@ export class InputHandler {
         this.canvas = canvas;
         this.camera = camera;
         this.scene = scene;
+
+        this.raycaster = new Raycaster(canvas, camera);
 
         this.init();
     }
@@ -40,8 +44,8 @@ export class InputHandler {
         let deltaX: number, deltaY: number;
 
         if (document.pointerLockElement === this.canvas) {
-            deltaX = event.movementX;
-            deltaY = event.movementY;
+            deltaX = -event.movementX;
+            deltaY = -event.movementY;
         } else {
             deltaX = event.clientX - this.lastMouseX;
             deltaY = event.clientY - this.lastMouseY;
@@ -69,14 +73,14 @@ export class InputHandler {
         event.preventDefault();
 
         if (this.isLeftMouseDragging) {
-            const ray = this.createRayFromMouse(event);
-            const { deltaX, deltaY } = this.calculateDelta(event);
+            const ray = this.raycaster.updateRay(event);
 
+            // Check ray intersection for each node and apply force if 
             this.scene.simulation.nodes.forEach(node => {
-                if (this.intersectSphere(ray.origin, ray.direction, [node.position[0], node.position[1], 0], 1)) {
-                    node.addForce(vec2.scale(vec2.create(),[deltaX, -deltaY], 1));
+                if (this.raycaster.intersectSphere(ray.origin, ray.direction, node.position, 1)) {
+                    node.addForce(vec3.normalize(vec3.create(), this.raycaster.deltaRay.direction));
                 }
-            });            
+            });
         }
 
         if (this.isMiddleMouseDragging) {
@@ -108,40 +112,4 @@ export class InputHandler {
         this.camera.zoom(event.deltaY * zoomSpeed);
     }
 
-    getMouseNDC(event: MouseEvent) {
-        const rect = this.canvas.getBoundingClientRect();
-        const x = (event.clientX - rect.left) / rect.width * 2 - 1 // [-1, 1] range
-        const y = -((event.clientY - rect.top) / rect.height * 2 - 1) // [-1, 1] range, inverted
-
-        return { x, y }
-    }
-
-    createRayFromMouse(event: MouseEvent) {
-        const ndc = this.getMouseNDC(event);
-        const nearPoint: vec3 = [ndc.x, ndc.y, -1.0];
-        const farPoint: vec3 = [ndc.x, ndc.y, 1.0];
-
-        const invProjView = mat4.create();
-        mat4.mul(invProjView, this.camera.projectionMatrix, this.camera.viewMatrix);
-        mat4.invert(invProjView, invProjView);
-
-        // Unproject points NDC to world
-        const nearWorld = vec3.transformMat4(vec3.create(), nearPoint, invProjView);
-        const farWorld = vec3.transformMat4(vec3.create(), farPoint, invProjView);
-
-        const rayDirection = vec3.sub(vec3.create(), farWorld, nearWorld);
-        vec3.normalize(rayDirection, rayDirection);
-
-        return { origin: nearWorld, direction: rayDirection };
-    }
-
-    intersectSphere(origin: vec3, direction: vec3, position: vec3, radius: number): boolean{
-        const oc = vec3.sub(vec3.create(), origin, position);
-        const a = vec3.dot(direction, direction);
-        const b = 2.0 * vec3.dot(oc, direction);
-        const c = vec3.dot(oc, oc) - radius * radius;
-        const discriminant = b * b - 4 * a * c;
-
-        return discriminant > 0;
-    }
 }

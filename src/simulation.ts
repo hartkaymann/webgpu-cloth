@@ -1,4 +1,4 @@
-import { vec2, vec3 } from "gl-matrix";
+import { vec3 } from "gl-matrix";
 import { Constraint } from "./constraint";
 import { ClothNode } from "./node";
 
@@ -7,15 +7,15 @@ import { ClothNode } from "./node";
 export class Simulation {
     nodes: ClothNode[];
     constraints: Constraint[];
-    gravity: vec2;
+    gravity: vec3;
 
     constructor() {
         this.nodes = [];
         this.constraints = [];
-        this.gravity = [0, -9.81]
+        this.gravity = [0, -9.81, -10]
     }
 
-    createNode(position: vec2 | Float32Array, mass = 0.01) : ClothNode {
+    createNode(position: vec3 | Float32Array, mass = 0.01) : ClothNode {
         let node = new ClothNode(position, mass);
         this.nodes.push(node);
         return node;

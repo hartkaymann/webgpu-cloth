@@ -5,6 +5,7 @@
   <meta charset="UTF-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="./style.css">
   <title>Cloth Simulation</title>
 </head>
 
@@ -12,9 +13,11 @@
   <div id="container">
     <h1>Kankerzooi:</h1>
     <canvas id="gfx-main" width="800" height="600"></canvas>
-    <h2>Performance:</h2>
-    <span>fps: </span><span id="fps"></span><br>
-    <span>dt: </span><span id="deltatime"></span>
+    <div id="debug">
+      <h2>Debug:</h2>
+      <span>fps: </span><span id="fps"></span><br>
+      <span>dt: </span><span id="deltatime"></span>
+    </div>
   </div>
   <script type="module" src="src/main.ts"></script>
 </body>
