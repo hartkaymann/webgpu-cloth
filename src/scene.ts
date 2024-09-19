@@ -12,17 +12,17 @@ export class Scene {
     clothWidth: number;
     clothHeight: number;
 
-    prevTime: number;
+    firstStep: boolean;
 
     constructor(camera: Camera) {
         this.camera = camera;
 
         this.simulation = new Simulation();
-        this.clothResolution = 16;
-        this.clothWidth = 8;
-        this.clothHeight = 6;
+        this.clothResolution = 10;
+        this.clothWidth = 1;
+        this.clothHeight = 1;
 
-        this.prevTime = performance.now();
+        this.firstStep = true;
 
         this.init();
     }
@@ -58,20 +58,10 @@ export class Scene {
         }
     }
 
-    update() {
-        const currTime = performance.now();
-        const deltaTime = (currTime - this.prevTime) / 1000;
-        this.prevTime = currTime;
-
-        this.simulation.update(deltaTime);
+    update(dt: number) {
+        this.simulation.update(dt);
 
         const dtLabel: HTMLElement = <HTMLElement>document.getElementById("deltatime");
-        dtLabel.innerText = deltaTime.toLocaleString(
-            undefined,
-            {
-                minimumFractionDigits: 0,
-                maximumFractionDigits: 4
-            }
-        );
+        dtLabel.innerText = dt.toFixed(4);
     }
 }

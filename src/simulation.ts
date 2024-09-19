@@ -12,16 +12,16 @@ export class Simulation {
     constructor() {
         this.nodes = [];
         this.constraints = [];
-        this.gravity = [0, -9.81, -10]
+        this.gravity = [0, -9.81, 0]
     }
 
-    createNode(position: vec3 | Float32Array, mass = 0.01) : ClothNode {
+    createNode(position: vec3 | Float32Array, mass = 0.002) : ClothNode {
         let node = new ClothNode(position, mass);
         this.nodes.push(node);
         return node;
     }
 
-    createConstraint(node1: ClothNode, node2: ClothNode, strength = 0.4) : Constraint{
+    createConstraint(node1: ClothNode, node2: ClothNode, strength = 2) : Constraint{
         let constraint = new Constraint(node1, node2, strength);
         this.constraints.push(constraint);
         return constraint;
@@ -33,9 +33,9 @@ export class Simulation {
             this.nodes[i].update(dt);
         }
 
-        for(let iteration = 0; iteration < 10; iteration++) {
+        for(let iteration = 0; iteration < 4; iteration++) {
             for(let i = 0; i < this.constraints.length; i++) {
-                this.constraints[i].update(dt);
+                this.constraints[i].update();
             }
         }
     }

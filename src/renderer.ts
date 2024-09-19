@@ -37,6 +37,14 @@ export class Renderer {
     // Scene to render
     scene: Scene
 
+    // Time
+    prevTime = 0;
+    timeAccumulator = 0;
+    readonly timeStep = 1 / 60;
+    fps = 0;  // Frame rate value
+    fpsLastTime = 0;  // Last time we calculated FPS
+    frameCount = 0;  // Frames since the last FPS calculation
+
     constructor(canvas: HTMLCanvasElement, scene: Scene) {
         this.canvas = canvas;
         this.scene = scene;
@@ -98,7 +106,7 @@ export class Renderer {
         const shaderModule = this.device.createShaderModule({ code: shader_src });
 
         this.pipeline = this.device.createRenderPipeline({
-            label: 'asic lighting',
+            label: 'common',
             layout: pipeline_layout,
             vertex: {
                 module: shaderModule,
@@ -108,7 +116,7 @@ export class Renderer {
                     {
                         arrayStride: 3 * 4, // 3 float @ 4 bytes
                         attributes: [
-                            { shaderLocation: 0, offset: 0, format: 'float32x2' }
+                            { shaderLocation: 0, offset: 0, format: 'float32x3' }
                         ]
                     }
                 ]
@@ -147,9 +155,26 @@ export class Renderer {
     }
 
     render = () => {
-        let start = performance.now();
+        let currTime = performance.now() * 0.001;
 
-        this.scene.update();
+        const deltaTime = currTime - this.prevTime;
+        this.prevTime = currTime;
+
+        this.timeAccumulator += deltaTime;
+
+        while (this.timeAccumulator >= this.timeStep) {
+            this.scene.update(this.timeStep);
+            this.timeAccumulator -= this.timeStep;
+        }
+
+        this.calculateFPS(currTime);
+
+        this.renderFrame();
+
+        requestAnimationFrame(this.render);
+    }
+
+    renderFrame() {
 
         const viewProjection = mat4.create();
         const positionBufferValues = Float32Array.from(
@@ -175,19 +200,20 @@ export class Renderer {
         passEncoder.draw(this.scene.simulation.nodes.length)
         passEncoder.end();
         this.device.queue.submit([commandEncoder.finish()]);
+    }
 
-        this.device.queue.onSubmittedWorkDone().then(() => {
-            let end = performance.now();
-            const fpsLabel: HTMLElement = <HTMLElement>document.getElementById("fps");
-            fpsLabel.innerText = (1000 / (end - start)).toLocaleString(
-                undefined,
-                {
-                    minimumFractionDigits: 0,
-                    maximumFractionDigits: 2
-                }
-            );
-        });
+    calculateFPS(currTime: number) {
+        this.frameCount++;
 
-        requestAnimationFrame(this.render);
+        // Calculate FPS every second
+        const elapsedTime = currTime - this.fpsLastTime;
+        if (elapsedTime > 1) {
+            this.fps = this.frameCount / elapsedTime;
+            this.frameCount = 0;
+            this.fpsLastTime = currTime;
+        }
+
+        const fpsLabel: HTMLElement = <HTMLElement>document.getElementById("fps");
+        fpsLabel.innerText = (this.fps).toFixed(2);
     }
 }

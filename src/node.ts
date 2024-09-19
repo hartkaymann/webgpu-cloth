@@ -4,13 +4,13 @@ export class ClothNode {
 
     position: vec3;
     prevPosition: vec3;
-    gravity: vec3;
-    velocity: vec3;
-    acceleration: vec3;
-    forceAccumulator: vec3;
+    gravity: vec3; // m/s²
+    velocity: vec3; // m/s
+    acceleration: vec3; // m/s²
+    forceAccumulator: vec3; 
 
     dt0: number;
-    invMass: number;
+    invMass: number; // 1/kg
     isStatic: boolean;
 
 
@@ -22,7 +22,7 @@ export class ClothNode {
         this.acceleration = [0, 0, 0];
         this.forceAccumulator = [0, 0, 0];
 
-        this.dt0 = 1;
+        this.dt0 = 1 / 60;
         if (mass > 0) {
             this.invMass = 1 / mass;
             this.isStatic = false;
@@ -71,6 +71,7 @@ export class ClothNode {
     }
 
     applyAcceleration() {
+        // a = F / m
         let acc = vec3.create();
         vec3.scale(acc, this.forceAccumulator, this.invMass);
         vec3.add(this.acceleration, this.acceleration, acc);

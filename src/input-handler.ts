@@ -77,7 +77,7 @@ export class InputHandler {
 
             // Check ray intersection for each node and apply force if 
             this.scene.simulation.nodes.forEach(node => {
-                if (this.raycaster.intersectSphere(ray.origin, ray.direction, node.position, 1)) {
+                if (this.raycaster.intersectSphere(ray.origin, ray.direction, node.position, 0.1)) {
                     node.addForce(vec3.normalize(vec3.create(), this.raycaster.deltaRay.direction));
                 }
             });
